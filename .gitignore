@@ -24,3 +24,4 @@ bot_database.json
 state.enc
 
 STATE_KEY.local.txt
+private_keys/
