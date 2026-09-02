@@ -1,0 +1,110 @@
+name: JioMart Bot (Public 24x7)
+
+on:
+  workflow_dispatch:        # manual start (collaborators only)
+  schedule:
+    - cron: "0 */6 * * *"   # auto-restart every 6h (job limit)
+
+concurrency:
+  group: jiomart-bot-public
+  cancel-in-progress: true
+
+permissions:
+  contents: write           # write = auto-backup sessions.enc into repo folder
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      STATE_KEY: ${{ secrets.STATE_KEY }}   # encryption key (sessions)
+      CODE_KEY: ${{ secrets.CODE_KEY }}     # encryption key (bot source code)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install chromium
+          sudo apt-get update -y && sudo apt-get install -y xvfb   # virtual screen (bot uses headed browser)
+
+      - name: Download encrypted state (public cache, but encrypted!)
+        uses: actions/cache@v4
+        with:
+          path: state.enc
+          key: jm-state-enc-${{ github.run_id }}
+          restore-keys: |
+            jm-state-enc-
+
+      - name: Decrypt state (sessions + database)
+        run: |
+          if [ -z "$STATE_KEY" ]; then echo "❌ STATE_KEY secret missing!"; exit 1; fi
+          if [ -f backup/sessions.enc ]; then
+            echo "📥 Restoring sessions from repo backup folder (authoritative)..."
+            cp -f backup/sessions.enc state.enc
+          elif [ -f state.enc ]; then
+            echo "📥 Repo backup missing - using cache fallback..."
+          fi
+          if [ -f state.enc ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in state.enc | tar xzf -
+            echo "🔓 State restored: $(ls sessions 2>/dev/null | wc -l) session(s)"
+          else
+            echo "🆕 First run - login via Telegram (/start -> New Login)"
+          fi
+
+      - name: Create .env from secret
+        run: |
+          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > .env
+          echo "ADMIN_ID=${{ secrets.ADMIN_ID }}" >> .env   # admin panel access (your Telegram ID)
+          echo "OWNER_KEY=${{ secrets.OWNER_KEY }}" >> .env # deployment signature (anti-theft lock)
+
+      - name: Decrypt bot code (public repo stores ONLY encrypted source)
+        run: |
+          if [ -z "$CODE_KEY" ]; then echo "❌ CODE_KEY secret missing!"; exit 1; fi
+          python botcrypt.py decrypt bot.enc jm1.8.0_3.py
+          echo "🔓 Bot source decrypted in runner memory only"
+
+      - name: Run Bot (long polling)
+        run: xvfb-run -a --server-args="-screen 0 1280x800x24" python jm1.8.0_3.py
+
+      - name: Encrypt state (sessions NEVER readable in public cache)
+        if: always()
+        run: |
+          rm -f state.enc
+          ( tar czf - sessions bot_database.json 2>/dev/null || true ) | \
+            openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY -out state.enc
+          echo "🔒 State encrypted ($(stat -c%s state.enc 2>/dev/null || echo 0) bytes)"
+
+      - name: Save encrypted state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.enc
+          key: jm-state-enc-${{ github.run_id }}
+
+      - name: Backup sessions to repo folder (backup/sessions.enc)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p backup
+          if [ -f state.enc ]; then cp -f state.enc backup/sessions.enc; fi
+          if [ -f backup/sessions.enc ]; then
+            git add backup/sessions.enc
+            if git diff --cached --quiet; then
+              echo "No session change since last backup"
+            else
+              git commit -m "session backup $(date -u '+%Y-%m-%d %H:%M UTC')"
+              git push
+              echo "✅ Sessions backup committed to backup/sessions.enc"
+            fi
+          else
+            echo "No state to backup"
+          fi

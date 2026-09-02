@@ -1,0 +1,25 @@
+# === NEVER push these to GitHub ===
+.env
+__pycache__/
+*.pyc
+
+# === Bot source code: plaintext NEVER pushed (only bot.enc) ===
+jm*.py
+jm_decrypted_test.py
+
+# === Probe/debug outputs (not needed by the bot) ===
+*.txt
+!requirements.txt
+*.jsonl
+*.json.tmp
+
+# === Keep these (bot needs them on first run): ===
+# sessions/            -> login cookies (PRIVATE repo ONLY!)
+# bot_database.json    -> configs (PRIVATE repo ONLY!)
+
+# === PUBLIC REPO SAFETY (never push these) ===
+sessions/
+bot_database.json
+state.enc
+
+STATE_KEY.local.txt
