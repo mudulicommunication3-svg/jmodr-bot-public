@@ -12,6 +12,7 @@ jm_decrypted_test.py
 !requirements.txt
 *.jsonl
 *.json.tmp
+manual_cart_detail.json
 
 # === Keep these (bot needs them on first run): ===
 # sessions/            -> login cookies (PRIVATE repo ONLY!)
