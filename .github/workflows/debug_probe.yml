@@ -246,28 +246,32 @@ jobs:
           print("\n=== DISCOVER NEW CART ENDPOINTS (from JS bundles) ===")
           import re as _re
           try:
-              req = urllib.request.Request("https://www.jiomart.com/", headers={"User-Agent": UA, "Accept": "text/html"})
-              with urllib.request.urlopen(req, timeout=30) as r:
-                  html = r.read().decode("utf-8", "replace")
-              srcs = _re.findall(r'src="([^"]+\.js[^"]*)"', html) + _re.findall(r'href="([^"]+\.js[^"]*)"', html)
-              srcs = list(dict.fromkeys(["https://www.jiomart.com" + s if s.startswith("/") else s for s in srcs if "jitm" not in s]))[:25]
-              print(f"  found {len(srcs)} JS bundles")
-              pat = _re.compile(r'[^"\']{0,60}(add_items|update_cart|get_cart|jmshipmentfee|cart/v[0-9.]+)[^"\']{0,60}')
-              hits = {}
-              for s in srcs:
+              all_hits = {}
+              for page_url in ["https://www.jiomart.com/", "https://www.jiomart.com/cart/bag"]:
                   try:
-                      req2 = urllib.request.Request(s, headers={"User-Agent": UA})
-                      with urllib.request.urlopen(req2, timeout=30) as r2:
-                          js = r2.read().decode("utf-8", "replace")
-                      for m in pat.finditer(js):
-                          frag = m.group(0)
-                          key = _re.sub(r'[^a-zA-Z0-9_/.-]', '', frag)[:100]
-                          if key not in hits:
-                              hits[key] = s.split("/")[-1][:40]
-                  except Exception:
-                      continue
-              print(f"  unique cart-api fragments: {len(hits)}")
-              for k, v in list(hits.items())[:40]:
+                      req = urllib.request.Request(page_url, headers={"User-Agent": UA, "Accept": "text/html"})
+                      with urllib.request.urlopen(req, timeout=30) as r:
+                          html = r.read().decode("utf-8", "replace")
+                  except Exception as e:
+                      print(f"  page {page_url} error: {e}"); continue
+                  srcs = _re.findall(r'src="([^"]+\.js[^"]*)"', html) + _re.findall(r'href="([^"]+\.js[^"]*)"', html)
+                  srcs = list(dict.fromkeys(["https://www.jiomart.com" + s if s.startswith("/") else s for s in srcs if "jitm" not in s]))[:40]
+                  print(f"  page {page_url}: {len(srcs)} JS bundles")
+                  pat = _re.compile(r'[^"\']{0,80}(add_items|update_cart|get_cart|jmshipmentfee|cart/v[0-9.]+|proxy/cart)[^"\']{0,80}')
+                  for s in srcs:
+                      try:
+                          req2 = urllib.request.Request(s, headers={"User-Agent": UA})
+                          with urllib.request.urlopen(req2, timeout=30) as r2:
+                              js = r2.read().decode("utf-8", "replace")
+                          for m in pat.finditer(js):
+                              frag = m.group(0)
+                              key = _re.sub(r'[^a-zA-Z0-9_/.-]', '', frag)[:120]
+                              if key not in all_hits:
+                                  all_hits[key] = s.split("/")[-1][:40]
+                      except Exception:
+                          continue
+              print(f"  unique cart-api fragments: {len(all_hits)}")
+              for k, v in list(all_hits.items())[:50]:
                   print(f"    {k}   <= {v}")
           except Exception as e:
               print(f"  discover error: {e}")
