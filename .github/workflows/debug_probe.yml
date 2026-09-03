@@ -144,6 +144,103 @@ jobs:
                   working = (f, test_auth, ck)
           print(f"\nWORKING SESSION: {working[0] if working else 'NONE - all tokens dead'}")
 
+          # Show which session the bot currently uses (active_key from configs)
+          try:
+              cfg = json.load(open("bot_database.json", encoding="utf-8"))
+              for chat, conf in cfg.items():
+                  if isinstance(conf, dict) and conf.get("active_key"):
+                      print(f"  ACTIVE for chat {chat}: {conf.get('active_key')}")
+          except Exception as e:
+              print("  configs read err:", e)
+
+          # 2b) FULL CART TEST with the working session
+          if working:
+              wf, wtok, wck = working
+              print(f"\n=== CART TEST USING WORKING SESSION: {os.path.basename(wf)} ===")
+              wch = "; ".join(f"{k}={v}" for k, v in wck.items())
+              def wh():
+                  h = {"User-Agent": UA, "Accept": "application/json, text/plain, */*",
+                       "Origin": "https://www.jiomart.com", "Referer": "https://www.jiomart.com/cart/bag",
+                       "Cookie": wch, "pincode": PIN, "x-pincode": PIN, "glo_pincode": PIN,
+                       "X-Location-Detail": json.dumps({"country": "INDIA", "country_iso_code": "IN", "pincode": PIN}),
+                       "X-Geolocation": json.dumps({"polygon_ids": []}),
+                       "x-visitor-id": vid, "visitor-id": vid, "X-Visitor-Id": vid,
+                       "x-channel": "MOB", "clientId": "mweb"}
+                  if wtok: h["Authorization"] = f"Bearer {wtok}"
+                  return h
+              # get cart id
+              wcart = None
+              try:
+                  req = urllib.request.Request("https://www.jiomart.com/ext/jmshipmentfee/cart/v1.0/get_cart?area_code=751024&b=true&i=true&journey=quickcommerce", headers=wh())
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      gc = json.loads(r.read().decode("utf-8", "replace"))
+                      prods = (gc.get("identifiers") or {}).get("products") if isinstance(gc.get("identifiers"), dict) else None
+                      print(f"[GET-CART] HTTP {r.status} success={gc.get('success')} cart_id={gc.get('cart_id')} items={len(prods or [])}")
+                      wcart = gc.get("cart_id")
+              except urllib.error.HTTPError as e:
+                  print(f"[GET-CART] HTTP {e.code} :: {e.read()[:200].decode('utf-8','replace')}")
+              except Exception as e:
+                  print(f"[GET-CART] ERROR: {e}")
+              # search with working session
+              witems = []
+              try:
+                  req = urllib.request.Request("https://www.jiomart.com/api/service/application/catalog/v1.0/products?q=amul+taaza+milk&page_size=5&page_no=1", headers=wh())
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      jw = json.loads(r.read().decode("utf-8", "replace"))
+                      witems = jw.get("items") or []
+                      print(f"[SEARCH(working)] HTTP {r.status} items={len(witems)}")
+              except Exception as e:
+                  print(f"[SEARCH(working)] ERROR: {e}")
+              wid = wslug = None; wsize = "OS"; wseller = None
+              for w in witems:
+                  if w.get("sellable"):
+                      wid = w.get("uid"); wslug = w.get("slug"); wseller = w.get("seller_id")
+                      wsize = (w.get("sizes") or ["OS"])[0]
+                      break
+              if not wid and witems:
+                  w0 = witems[0]; wid = w0.get("uid"); wslug = w0.get("slug"); wseller = w0.get("seller_id")
+                  wsize = (w0.get("sizes") or ["OS"])[0]
+              print(f"  test item: uid={wid} size={wsize} seller={wseller}")
+              # sizes for that item
+              if wslug:
+                  try:
+                      req = urllib.request.Request(f"https://www.jiomart.com/api/service/application/catalog/v2.0/products/{wslug}/sizes", headers=wh())
+                      with urllib.request.urlopen(req, timeout=20) as r:
+                          jsz = json.loads(r.read().decode("utf-8", "replace"))
+                          szs = jsz.get("sizes") or []
+                          print(f"[SIZES(working)] HTTP {r.status} count={len(szs)} sellable={jsz.get('sellable')}")
+                          if szs:
+                              s0 = szs[0]
+                              print(f"  size[0]: {json.dumps(s0)[:400]}")
+                              print(f"  sellers: {[x.get('seller_identifiers') or x.get('seller_id') for x in szs[:5]]}")
+                              if s0.get("size"): wsize = s0["size"]
+                              sid = s0.get("seller_identifiers") or s0.get("seller_id")
+                  except Exception as e:
+                      print(f"[SIZES(working)] ERROR: {e}")
+          # 2c) ADD TO CART with working session
+          if working and wid:
+              seller_try = [1] if not wseller else [wseller, 1]
+              ok = False
+              for s_try in dict.fromkeys(seller_try):
+                  try:
+                      req = urllib.request.Request(
+                          f"https://www.jiomart.com/ext/jmshipmentfee/cart/v2.0/add_items?area_code=751024&journey=quickcommerce&id={wcart or 'None'}",
+                          headers=wh(),
+                          data=json.dumps({"item_id": int(wid), "item_size": str(wsize), "quantity": 1,
+                                           "seller_id": int(s_try),
+                                           "meta": {"vertical_code": "GROCERIES", "compute_delivery_fee": True},
+                                           "extra_meta": {"is_tradein_opted": False}, "journey": "quickcommerce"}).encode(),
+                          method="POST")
+                      with urllib.request.urlopen(req, timeout=20) as r:
+                          ja = json.loads(r.read().decode("utf-8", "replace"))
+                          print(f"[ADD(working,s={s_try})] HTTP {r.status} success={ja.get('success')} message={ja.get('message')}")
+                          if ja.get("success"): ok = True; break
+                  except urllib.error.HTTPError as e:
+                      print(f"[ADD(working,s={s_try})] HTTP {e.code} :: {e.read()[:250].decode('utf-8','replace')}")
+                  except Exception as e:
+                      print(f"[ADD(working,s={s_try})] ERROR: {e}")
+              print(f"\n>>> CART ADD VIA WORKING SESSION: {'SUCCESS - cart works when token valid!' if ok else 'STILL FAILING - needs size/seller fixes'}")
+
           # 1) SEARCH
           j = call("SEARCH", "https://www.jiomart.com/api/service/application/catalog/v1.0/products?q=amul%20mozarella&page_size=3&page_no=1")
           items = (j or {}).get("items") or []
