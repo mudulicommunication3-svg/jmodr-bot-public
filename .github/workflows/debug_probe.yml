@@ -242,6 +242,35 @@ jobs:
                       print(f"[ADD(working,s={s_try})] ERROR: {e}")
               print(f"\n>>> CART ADD VIA WORKING SESSION: {'SUCCESS - cart works when token valid!' if ok else 'STILL FAILING - needs size/seller fixes'}")
 
+          # 2d) DISCOVER NEW CART API from website JS bundles
+          print("\n=== DISCOVER NEW CART ENDPOINTS (from JS bundles) ===")
+          try:
+              req = urllib.request.Request("https://www.jiomart.com/", headers={"User-Agent": UA, "Accept": "text/html"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  html = r.read().decode("utf-8", "replace")
+              srcs = re.findall(r'src="([^"]+\.js[^"]*)"', html) + re.findall(r'href="([^"]+\.js[^"]*)"', html)
+              srcs = list(dict.fromkeys(["https://www.jiomart.com" + s if s.startswith("/") else s for s in srcs if "jitm" not in s]))[:25]
+              print(f"  found {len(srcs)} JS bundles")
+              pat = re.compile(r'[^"\']{0,60}(add_items|update_cart|get_cart|jmshipmentfee|cart/v[0-9.]+)[^"\']{0,60}')
+              hits = {}
+              for s in srcs:
+                  try:
+                      req2 = urllib.request.Request(s, headers={"User-Agent": UA})
+                      with urllib.request.urlopen(req2, timeout=30) as r2:
+                          js = r2.read().decode("utf-8", "replace")
+                      for m in pat.finditer(js):
+                          frag = m.group(0)
+                          key = re.sub(r'[^a-zA-Z0-9_/.-]', '', frag)[:100]
+                          if key not in hits:
+                              hits[key] = s.split("/")[-1][:40]
+                  except Exception:
+                      continue
+              print(f"  unique cart-api fragments: {len(hits)}")
+              for k, v in list(hits.items())[:40]:
+                  print(f"    {k}   <= {v}")
+          except Exception as e:
+              print(f"  discover error: {e}")
+
           # 1) SEARCH
           j = call("SEARCH", "https://www.jiomart.com/api/service/application/catalog/v1.0/products?q=amul%20mozarella&page_size=3&page_no=1")
           items = (j or {}).get("items") or []
