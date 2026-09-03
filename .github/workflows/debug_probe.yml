@@ -244,14 +244,15 @@ jobs:
 
           # 2d) DISCOVER NEW CART API from website JS bundles
           print("\n=== DISCOVER NEW CART ENDPOINTS (from JS bundles) ===")
+          import re as _re
           try:
               req = urllib.request.Request("https://www.jiomart.com/", headers={"User-Agent": UA, "Accept": "text/html"})
               with urllib.request.urlopen(req, timeout=30) as r:
                   html = r.read().decode("utf-8", "replace")
-              srcs = re.findall(r'src="([^"]+\.js[^"]*)"', html) + re.findall(r'href="([^"]+\.js[^"]*)"', html)
+              srcs = _re.findall(r'src="([^"]+\.js[^"]*)"', html) + _re.findall(r'href="([^"]+\.js[^"]*)"', html)
               srcs = list(dict.fromkeys(["https://www.jiomart.com" + s if s.startswith("/") else s for s in srcs if "jitm" not in s]))[:25]
               print(f"  found {len(srcs)} JS bundles")
-              pat = re.compile(r'[^"\']{0,60}(add_items|update_cart|get_cart|jmshipmentfee|cart/v[0-9.]+)[^"\']{0,60}')
+              pat = _re.compile(r'[^"\']{0,60}(add_items|update_cart|get_cart|jmshipmentfee|cart/v[0-9.]+)[^"\']{0,60}')
               hits = {}
               for s in srcs:
                   try:
@@ -260,7 +261,7 @@ jobs:
                           js = r2.read().decode("utf-8", "replace")
                       for m in pat.finditer(js):
                           frag = m.group(0)
-                          key = re.sub(r'[^a-zA-Z0-9_/.-]', '', frag)[:100]
+                          key = _re.sub(r'[^a-zA-Z0-9_/.-]', '', frag)[:100]
                           if key not in hits:
                               hits[key] = s.split("/")[-1][:40]
                   except Exception:
