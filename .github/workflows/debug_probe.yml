@@ -23,6 +23,21 @@ jobs:
           else
             echo "NO session backup found"
           fi
+      - name: Repack sessions with NEW key (for local inspect) + upload artifact
+        if: always()
+        env:
+          STATE_KEY2: ${{ secrets.STATE_KEY2 }}
+        run: |
+          mkdir -p out
+          touch offline_database.json bot_database.json
+          ( tar czf - sessions bot_database.json offline_database.json 2>/dev/null || true ) | \
+            openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY2 -out out/state_new.enc
+          echo "state_new.enc size: $(stat -c%s out/state_new.enc)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: state-new
+          path: out/state_new.enc
       - name: Probe JioMart APIs (search / sizes / add_items)
         env:
           STATE_KEY: ${{ secrets.STATE_KEY }}
