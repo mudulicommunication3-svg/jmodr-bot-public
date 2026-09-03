@@ -78,7 +78,8 @@ jobs:
         if: always()
         run: |
           rm -f state.enc
-          ( tar czf - sessions bot_database.json 2>/dev/null || true ) | \
+          touch offline_database.json   # keep file in backup even if bot never created it
+          ( tar czf - sessions bot_database.json offline_database.json 2>/dev/null || true ) | \
             openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY -out state.enc
           echo "🔒 State encrypted ($(stat -c%s state.enc 2>/dev/null || echo 0) bytes)"
 

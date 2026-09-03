@@ -21,6 +21,7 @@ manual_cart_detail.json
 # === PUBLIC REPO SAFETY (never push these) ===
 sessions/
 bot_database.json
+offline_database.json
 state.enc
 
 STATE_KEY.local.txt
