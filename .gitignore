@@ -23,6 +23,15 @@ sessions/
 bot_database.json
 offline_database.json
 state.enc
+_inspect_browser.py
+inspect_cart.cmd
+_capture_network.jsonl
+_captured_state.json
+sessions_restore.tar.gz
+_test_new_cart.py
+_test_new_cart2.py
+_dump_ls.py
+_test_*.py
 
 STATE_KEY.local.txt
 private_keys/
