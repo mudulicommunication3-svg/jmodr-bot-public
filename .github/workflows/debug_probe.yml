@@ -100,6 +100,50 @@ jobs:
               except Exception as e:
                   print(f"\n[{name}] ERROR: {e}"); return None
 
+          # Test EVERY session's token against SIZES API
+          slug0 = "amul-mozzarella-cheddar-diced-cheese-blend-200-g-pack-mffmzt-7520225"
+          print("\n=== PER-SESSION TOKEN TEST (against sizes API) ===")
+          working = None
+          for f in files:
+              try:
+                  st = json.load(open(f, encoding="utf-8"))
+              except Exception as e:
+                  print(f"  {os.path.basename(f)[:36]}: read err {e}"); continue
+              ck = {c["name"]: c["value"] for c in st.get("cookies", []) if c.get("name") and c.get("value")}
+              tok = ""
+              for c in st.get("cookies", []):
+                  if c.get("name") == "cra_access_token":
+                      v = str(c.get("value") or "").strip()
+                      if v and not v.startswith("eyJ"):
+                          tok = v; break
+              if not tok:
+                  for origin in st.get("origins", []):
+                      if "jiomart.com" in (origin.get("origin") or ""):
+                          for item in origin.get("localStorage", []) or []:
+                              if item.get("name") in ("token", "access_token", "jwt"):
+                                  tok = str(item.get("value", "")).replace("Bearer ", "").strip('"'); break
+              jwt = str(ck.get("cra_access_token", ""))
+              test_auth = tok or (jwt if jwt and jwt.startswith("eyJ") else "")
+              ch = "; ".join(f"{k}={v}" for k, v in ck.items())
+              h = {"User-Agent": UA, "Accept": "application/json, text/plain, */*",
+                   "Origin": "https://www.jiomart.com", "Referer": "https://www.jiomart.com/",
+                   "Cookie": ch, "pincode": PIN, "x-pincode": PIN, "glo_pincode": PIN,
+                   "x-visitor-id": vid, "visitor-id": vid, "x-channel": "MOB", "clientId": "mweb"}
+              if test_auth: h["Authorization"] = f"Bearer {test_auth}"
+              status, body = "?", ""
+              try:
+                  req = urllib.request.Request(f"https://www.jiomart.com/api/service/application/catalog/v2.0/products/{slug0}/sizes", headers=h)
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      status = r.status; body = r.read().decode("utf-8", "replace")[:150]
+              except urllib.error.HTTPError as e:
+                  status = e.code; body = e.read().decode("utf-8", "replace")[:150]
+              except Exception as e:
+                  body = str(e)[:150]
+              print(f"  {os.path.basename(f)[:36]}: token={'base64' if tok and not tok.startswith('eyJ') else ('jwt' if test_auth else 'NONE')} len={len(test_auth)} => HTTP {status} {body}")
+              if status == 200 and not working:
+                  working = (f, test_auth, ck)
+          print(f"\nWORKING SESSION: {working[0] if working else 'NONE - all tokens dead'}")
+
           # 1) SEARCH
           j = call("SEARCH", "https://www.jiomart.com/api/service/application/catalog/v1.0/products?q=amul%20mozarella&page_size=3&page_no=1")
           items = (j or {}).get("items") or []
