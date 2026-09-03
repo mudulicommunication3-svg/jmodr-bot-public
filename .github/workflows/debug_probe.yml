@@ -52,6 +52,19 @@ jobs:
                               token = str(item.get("value", "")).replace("Bearer ", "").strip('"'); break
           print("token found:", bool(token), "| len:", len(token), "| cookie count:", len(cookies))
           print("cookie names:", sorted(cookies.keys()))
+          # Examine cra_access_token in every session file
+          cat = cookies.get("cra_access_token", "")
+          print("cra_access_token: len =", len(cat), "| starts eyJ (JWT)?", cat.startswith("eyJ"), "| first8:", (cat[:8] + "...") if cat else "EMPTY")
+          for f in files:
+              try:
+                  st = json.load(open(f, encoding="utf-8"))
+                  for c in st.get("cookies", []):
+                      if c.get("name") == "cra_access_token":
+                          v = str(c.get("value") or "").strip()
+                          print(f"  {os.path.basename(f)[:34]}: cra len={len(v)} jwt={v.startswith('eyJ')}")
+                          break
+              except Exception as e:
+                  print("  ", f, "err", e)
           vid = str(uuid.uuid4())
           cookie_hdr = "; ".join(f"{k}={v}" for k, v in cookies.items())
 
@@ -102,18 +115,28 @@ jobs:
               print(f"      journey={it.get('journey')} store_ids={it.get('store_ids')}")
               print(f"      vertical={(it.get('attributes') or {}).get('vertical-code')}")
 
-          # 2) SIZES (needs token)
+          # 2) SIZES (needs token) - try BOTH token types
           if slug:
-              js = call("SIZES", f"https://www.jiomart.com/api/service/application/catalog/v2.0/products/{slug}/sizes")
-              if js:
-                  szs = js.get("sizes") or []
-                  print(f"  sizes count: {len(szs)}")
-                  if szs:
-                      s0 = szs[0]
-                      print(f"  size[0] keys: {sorted(s0.keys())[:20]}")
-                      print(f"  size[0]: {json.dumps(s0)[:600]}")
-                      sids = [x.get("seller_identifiers") or x.get("seller_id") for x in szs[:5]]
-                      print(f"  seller_identifiers: {sids}")
+              js = call("SIZES(no-token)", f"https://www.jiomart.com/api/service/application/catalog/v2.0/products/{slug}/sizes")
+              # try with the eyJ JWT anyway
+              hdr_jwt = headers()
+              hdr_jwt["Authorization"] = f"Bearer {cat or 'x'}"
+              try:
+                  req = urllib.request.Request(f"https://www.jiomart.com/api/service/application/catalog/v2.0/products/{slug}/sizes", headers=hdr_jwt)
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      js2 = json.loads(r.read().decode("utf-8", "replace"))
+                      print(f"\n[SIZES(jwt)] HTTP {r.status} keys: {list(js2.keys())[:10]}")
+                      szs = js2.get("sizes") or []
+                      if szs:
+                          print(f"  sizes count: {len(szs)} | size[0]: {json.dumps(szs[0])[:400]}")
+                          sids = [x.get("seller_identifiers") or x.get("seller_id") for x in szs[:5]]
+                          print(f"  seller_identifiers: {sids}")
+                      global_token = cat
+              except urllib.error.HTTPError as e:
+                  print(f"\n[SIZES(jwt)] HTTP {e.code} :: {e.read()[:200].decode('utf-8','replace')}")
+                  global_token = ""
+              except Exception as e:
+                  print(f"\n[SIZES(jwt)] ERROR: {e}"); global_token = ""
 
           # 3) ADD TO CART (real add, harmless - no order placed)
           if item_id:
@@ -121,12 +144,26 @@ jobs:
                          "seller_id": 1,
                          "meta": {"vertical_code": "GROCERIES", "compute_delivery_fee": True},
                          "extra_meta": {"is_tradein_opted": False}, "journey": "quickcommerce"}
-              ja = call("ADD-ITEMS(seller=1,QC)", "https://www.jiomart.com/ext/jmshipmentfee/cart/v2.0/add_items?area_code=751024&journey=quickcommerce&id=None", data=payload)
-              if ja:
-                  print(f"  ADD RESULT: success={ja.get('success')} message={ja.get('message')} cart_id={ja.get('cart_id')}")
-              payload2 = dict(payload); payload2.pop("journey", None)
-              jb = call("ADD-ITEMS(seller=1,noJ)", "https://www.jiomart.com/ext/jmshipmentfee/cart/v2.0/add_items?area_code=751024&id=None", data=payload2)
-              if jb:
-                  print(f"  ADD RESULT: success={jb.get('success')} message={jb.get('message')} cart_id={jb.get('cart_id')}")
+              # with the JWT token in Authorization (if any)
+              def call2(name, url, data, auth):
+                  h = headers()
+                  if auth:
+                      h["Authorization"] = f"Bearer {auth}"
+                  try:
+                      req = urllib.request.Request(url, headers=h, data=json.dumps(data).encode(), method="POST")
+                      with urllib.request.urlopen(req, timeout=20) as r:
+                          j = json.loads(r.read().decode("utf-8", "replace"))
+                          print(f"\n[{name}] HTTP {r.status} success={j.get('success')} message={j.get('message')} cart_id={j.get('cart_id')}")
+                          print(f"  full: {json.dumps(j)[:500]}")
+                          return j
+                  except urllib.error.HTTPError as e:
+                      print(f"\n[{name}] HTTP {e.code} :: {e.read()[:300].decode('utf-8','replace')}")
+                  except Exception as e:
+                      print(f"\n[{name}] ERROR: {e}")
+                  return None
+              auth = cat if (cat and not cat.startswith("eyJ") ) else cat
+              call2("ADD(jwt,QC)", "https://www.jiomart.com/ext/jmshipmentfee/cart/v2.0/add_items?area_code=751024&journey=quickcommerce&id=None", payload, cat)
+              p2 = dict(payload); p2.pop("journey", None)
+              call2("ADD(jwt,noJ)", "https://www.jiomart.com/ext/jmshipmentfee/cart/v2.0/add_items?area_code=751024&id=None", p2, cat)
           print("\n=== DIAGNOSTIC COMPLETE ===")
           PYEOF
