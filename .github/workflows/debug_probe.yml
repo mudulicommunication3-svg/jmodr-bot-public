@@ -219,7 +219,8 @@ jobs:
                       print(f"[SIZES(working)] ERROR: {e}")
           # 2c) ADD TO CART with working session
           if working and wid:
-              seller_try = [sid, wseller, 1]
+              sid_flat = sid[0] if isinstance(sid, list) and sid else sid
+              seller_try = [sid_flat, wseller, 1]
               ok = False
               for s_try in dict.fromkeys(seller_try):
                   try:
