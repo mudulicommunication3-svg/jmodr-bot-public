@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: write           # write = auto-backup sessions.enc into repo folder
+  actions: write            # write = admin panel "Restart Bot" button (workflow dispatch)
 
 jobs:
   run-bot:
@@ -113,6 +114,9 @@ jobs:
           echo "🚀 DB auto-save watcher started (saves add/edit/delete within ~45s)"
 
       - name: Run Bot (long polling)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # admin panel "Restart Bot" button
+          GH_REPO: mudulicommunication3-svg/jmodr-bot-public
         run: xvfb-run -a --server-args="-screen 0 1280x800x24" python jm1.8.0_3.py
 
       - name: Encrypt state (sessions NEVER readable in public cache)
