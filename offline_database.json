@@ -47,8 +47,7 @@
         "address2": "Ssssss",
         "city": "Bhubaneswar",
         "state": "Odisha",
-        "landmark": "Near Tower",
-        "is_default": true
+        "landmark": "Near Tower"
       },
       {
         "pincode": "752103",
@@ -72,67 +71,93 @@
         "address2": "Desi boy",
         "city": "City",
         "state": "State",
+        "landmark": "Near Tower",
+        "is_default": true
+      },
+      {
+        "pincode": "754004",
+        "latitude": 20.132482,
+        "longitude": 86.059963,
+        "phone": "9999997788",
+        "name": "Test",
+        "address1": "Test",
+        "address2": "Test",
+        "city": "City",
+        "state": "State",
         "landmark": "Near Tower"
       }
     ],
     "cart": {
-      "7544818": {
-        "uid": "7544818",
-        "name": "Good Life Kachi Ghani Mustard Oil 1 L (Pouch)",
-        "slug": "good-life-kachi-ghani-mustard-oil-1-l-pouch-mffnb4-7544818",
-        "price": 178.0,
-        "mrp": 220.0,
+      "72878635": {
+        "uid": "72878635",
+        "name": "BDM Fresh Whole Wheat Chakki Atta 5 kg",
+        "slug": "bdm-fresh-whole-wheat-chakki-atta-5-kg-ml6jl7-72878635",
+        "price": 179.0,
+        "mrp": 250.0,
         "quantity": 1,
-        "size": "1 L",
-        "pack": "1 L",
-        "seller_id": 1,
-        "vertical": "GROCERIES",
-        "size_variants": [
-          "1 L"
-        ],
-        "max_qty": 3,
-        "sellable": true
-      },
-      "7529583": {
-        "uid": "7529583",
-        "name": "Good Life Whole Wheat Chakki Atta 5 kg",
-        "slug": "good-life-whole-wheat-chakki-atta-5-kg-mffn46-7529583",
-        "price": 209.0,
-        "mrp": 290.0,
-        "quantity": 1,
-        "size": "5 KG",
+        "size": "OS",
         "pack": "5 kg",
         "seller_id": 1,
         "vertical": "GROCERIES",
         "size_variants": [
-          "5 KG"
+          "OS"
+        ],
+        "max_qty": 2,
+        "sellable": true
+      },
+      "7550790": {
+        "uid": "7550790",
+        "name": "Loose Sugar M 1 kg",
+        "slug": "loose-sugar-m-1-kg-mffneb-7550790",
+        "price": 59.0,
+        "mrp": 59.0,
+        "quantity": 1,
+        "size": "OS",
+        "pack": "1 kg",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "OS"
+        ],
+        "max_qty": 2,
+        "sellable": true
+      },
+      "7546084": {
+        "uid": "7546084",
+        "name": "King's Physically Refined Rice Bran Oil 840 g",
+        "slug": "kings-physically-refined-rice-bran-oil-840-g-mffnbq-7546084",
+        "price": 148.0,
+        "mrp": 169.0,
+        "quantity": 1,
+        "size": "OS",
+        "pack": "840 g",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "OS"
         ],
         "max_qty": 4,
         "sellable": true
       },
-      "7507147": {
-        "uid": "7507147",
-        "name": "Fortune Chakki Fresh Atta 5 kg",
-        "slug": "fortune-chakki-fresh-atta-5-kg-mffmtn-7507147",
-        "price": 225.0,
-        "mrp": 263.0,
+      "7534253": {
+        "uid": "7534253",
+        "name": "Good Life Fine Besan 500 g",
+        "slug": "good-life-fine-besan-500-g-mffn6a-7534253",
+        "price": 51.0,
+        "mrp": 90.0,
         "quantity": 1,
-        "size": "5 KG",
-        "pack": "5 kg",
+        "size": "500 G",
+        "pack": "500 g",
         "seller_id": 1,
         "vertical": "GROCERIES",
         "size_variants": [
-          "5 KG"
+          "500 G"
         ],
         "max_qty": 4,
         "sellable": true
       }
     },
-    "search_history": [
-      "Atta",
-      "Mustard oil",
-      "Vita meri"
-    ],
+    "search_history": [],
     "cart_mode": "OFFLINE",
     "preset_coupon": "JM1Y6O2G2IX"
   },
