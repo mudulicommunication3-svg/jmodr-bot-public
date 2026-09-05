@@ -123,7 +123,9 @@
         "sellable": true
       }
     },
-    "search_history": [],
+    "search_history": [
+      "Oil"
+    ],
     "cart_mode": "OFFLINE",
     "preset_coupon": "JM1Y6O2G2IX"
   },
