@@ -3,7 +3,7 @@ name: JioMart Bot (Public 24x7)
 on:
   workflow_dispatch:        # manual start (collaborators only)
   schedule:
-    - cron: "0 */4 * * *"   # auto-restart every 4h (fewer offline gaps; GitHub cron can delay 1-2h)
+    - cron: "0 */8 * * *"   # EMERGENCY FALLBACK only - chain mode self-renews every ~5h30m
 
 concurrency:
   group: jiomart-bot-public
@@ -16,7 +16,7 @@ permissions:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 355    # GitHub hard cap = 6h; chain mode renews before this
     env:
       STATE_KEY: ${{ secrets.STATE_KEY }}   # encryption key (sessions)
       CODE_KEY: ${{ secrets.CODE_KEY }}     # encryption key (bot source code)
