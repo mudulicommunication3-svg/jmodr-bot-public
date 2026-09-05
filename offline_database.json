@@ -121,43 +121,11 @@
         ],
         "max_qty": 2,
         "sellable": true
-      },
-      "7546084": {
-        "uid": "7546084",
-        "name": "King's Physically Refined Rice Bran Oil 840 g",
-        "slug": "kings-physically-refined-rice-bran-oil-840-g-mffnbq-7546084",
-        "price": 148.0,
-        "mrp": 169.0,
-        "quantity": 1,
-        "size": "OS",
-        "pack": "840 g",
-        "seller_id": 1,
-        "vertical": "GROCERIES",
-        "size_variants": [
-          "OS"
-        ],
-        "max_qty": 4,
-        "sellable": true
-      },
-      "7534253": {
-        "uid": "7534253",
-        "name": "Good Life Fine Besan 500 g",
-        "slug": "good-life-fine-besan-500-g-mffn6a-7534253",
-        "price": 51.0,
-        "mrp": 90.0,
-        "quantity": 1,
-        "size": "500 G",
-        "pack": "500 g",
-        "seller_id": 1,
-        "vertical": "GROCERIES",
-        "size_variants": [
-          "500 G"
-        ],
-        "max_qty": 4,
-        "sellable": true
       }
     },
-    "search_history": [],
+    "search_history": [
+      "Oil"
+    ],
     "cart_mode": "OFFLINE",
     "preset_coupon": "JM1Y6O2G2IX"
   },
