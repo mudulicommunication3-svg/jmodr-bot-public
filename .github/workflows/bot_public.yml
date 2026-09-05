@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # full history (DB auto-save watcher pushes new commits)
 
       - name: Python
         uses: actions/setup-python@v5
@@ -83,6 +85,33 @@ jobs:
           python botcrypt.py decrypt bot.enc jm1.8.0_3.py
           echo "🔓 Bot source decrypted in runner memory only"
 
+      - name: Start DB auto-save watcher (repo file = permanent storage)
+        run: |
+          cat > db_autosave.sh <<'EOF'
+          #!/bin/bash
+          # Saves EVERY offline_database.json change (address/cart/coupon add/edit/DELETE)
+          # to the repo within ~45s - exactly like the PC run (D:\JioMartBot behaviour).
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          sleep 60   # let the bot finish restore/startup first
+          while true; do
+            sleep 45
+            [ -f offline_database.json ] || continue
+            if ! git diff --quiet -- offline_database.json 2>/dev/null; then
+              git add offline_database.json
+              git commit -m "db autosave $(date -u '+%Y-%m-%d %H:%M UTC')" >/dev/null 2>&1 || true
+              git pull --rebase --autostash origin main >/dev/null 2>&1 || true
+              git rebase --abort >/dev/null 2>&1 || true
+              if git push origin main >/dev/null 2>&1; then
+                echo "$(date -u '+%H:%M:%S') 💾 offline_database.json saved permanently to repo"
+              fi
+            fi
+          done
+          EOF
+          chmod +x db_autosave.sh
+          nohup bash db_autosave.sh > db_autosave.log 2>&1 &
+          echo "🚀 DB auto-save watcher started (saves add/edit/delete within ~45s)"
+
       - name: Run Bot (long polling)
         run: xvfb-run -a --server-args="-screen 0 1280x800x24" python jm1.8.0_3.py
 
@@ -108,6 +137,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p backup
+          # watcher may have pushed newer commits meanwhile - sync first (autostash keeps local files)
+          git pull --rebase --autostash origin main >/dev/null 2>&1 || true
+          git rebase --abort >/dev/null 2>&1 || true
           if [ -f state.enc ]; then cp -f state.enc backup/sessions.enc; fi
           if [ -f backup/sessions.enc ]; then
             git add backup/sessions.enc
