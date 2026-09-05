@@ -71,8 +71,7 @@
         "address2": "Desi boy",
         "city": "City",
         "state": "State",
-        "landmark": "Near Tower",
-        "is_default": true
+        "landmark": "Near Tower"
       },
       {
         "pincode": "754004",
@@ -84,7 +83,8 @@
         "address2": "Test",
         "city": "City",
         "state": "State",
-        "landmark": "Near Tower"
+        "landmark": "Near Tower",
+        "is_default": true
       }
     ],
     "cart": {
