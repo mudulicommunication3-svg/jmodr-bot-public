@@ -61,12 +61,12 @@ jobs:
           else
             echo "🆕 First run - login via Telegram (/start -> New Login)"
           fi
-          # Keep fresh saves from the last run (valid non-empty state copy),
-          # otherwise fall back to the committed repo copy.
-          if python -c "import json;d=json.load(open('offline_database.json'));assert d" 2>/dev/null; then
-            echo "✅ offline_database.json from state (has data)"
+          # Keep fresh saves from the last run ONLY if they contain real data,
+          # otherwise fall back to the committed repo copy (addresses/cart user data).
+          if python -c "import json,sys;d=json.load(open('offline_database.json'));ok=any((v.get('addresses') or v.get('cart')) for v in d.values() if isinstance(v,dict));sys.exit(0 if ok else 1)" 2>/dev/null; then
+            echo "✅ offline_database.json from state (has address/cart data)"
           else
-            echo "🔄 offline_database.json empty/invalid -> using committed repo copy"
+            echo "🔄 offline_database.json empty or no user data -> using committed repo copy"
             cp -f /tmp/offline_database.repo.json offline_database.json 2>/dev/null || true
           fi
           echo "📦 offline_database.json entries: $(python -c "import json;d=json.load(open('offline_database.json'));print(len(d))" 2>/dev/null || echo 0)"
