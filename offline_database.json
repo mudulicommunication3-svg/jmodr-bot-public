@@ -111,7 +111,7 @@
         "slug": "loose-sugar-m-1-kg-mffneb-7550790",
         "price": 59.0,
         "mrp": 59.0,
-        "quantity": 2,
+        "quantity": 1,
         "size": "OS",
         "pack": "1 kg",
         "seller_id": 1,
@@ -138,12 +138,26 @@
         ],
         "max_qty": 4,
         "sellable": true
+      },
+      "7552647": {
+        "uid": "7552647",
+        "name": "Loose Sona Masuri Rice 1 kg",
+        "slug": "loose-sona-masuri-rice-1-kg-mffnfd-7552647",
+        "price": 39.0,
+        "mrp": 39.0,
+        "quantity": 1,
+        "size": "OS",
+        "pack": "1 kg",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "OS"
+        ],
+        "max_qty": 4,
+        "sellable": true
       }
     },
-    "search_history": [
-      "Rice",
-      "Oil"
-    ],
+    "search_history": [],
     "cart_mode": "OFFLINE",
     "preset_coupon": "JM1Y6O2G2IX"
   },
