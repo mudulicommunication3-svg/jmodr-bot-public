@@ -1,0 +1,180 @@
+{
+  "7351664603": {
+    "addresses": [
+      {
+        "pincode": "752104",
+        "latitude": 20.120998,
+        "longitude": 85.837441,
+        "phone": "9966553333",
+        "name": "Rrrrrrr",
+        "address1": "Rrrrrr",
+        "address2": "Rrrrrr",
+        "city": "City",
+        "state": "State",
+        "landmark": "Near Tower"
+      },
+      {
+        "pincode": "752104",
+        "latitude": 20.122099,
+        "longitude": 85.837395,
+        "phone": "9988663325",
+        "name": "Sk alam",
+        "address1": "Pipili hata road pipili",
+        "address2": "Pipili hata road pipili",
+        "city": "City",
+        "state": "State",
+        "landmark": "Near Tower"
+      },
+      {
+        "pincode": "751009",
+        "latitude": 20.256067,
+        "longitude": 85.832968,
+        "phone": "9999999623",
+        "name": "JAGA DAS",
+        "address1": "Gagan",
+        "address2": "Gagan",
+        "city": "City",
+        "state": "State",
+        "landmark": "Near Tower"
+      },
+      {
+        "pincode": "751010",
+        "latitude": 20.294459,
+        "longitude": 85.857796,
+        "phone": "9999996633",
+        "name": "Ssssss",
+        "address1": "Ssssss",
+        "address2": "Ssssss",
+        "city": "Bhubaneswar",
+        "state": "Odisha",
+        "landmark": "Near Tower",
+        "is_default": true
+      },
+      {
+        "pincode": "752103",
+        "latitude": 20.096719,
+        "longitude": 86.089228,
+        "phone": "9988556633",
+        "name": "Dadada",
+        "address1": "Dadada",
+        "address2": "Dadada",
+        "city": "City",
+        "state": "State",
+        "landmark": "Near Tower"
+      },
+      {
+        "pincode": "754004",
+        "latitude": 20.096863,
+        "longitude": 86.089178,
+        "phone": "6370419362",
+        "name": "Desi boy",
+        "address1": "Desi boy",
+        "address2": "Desi boy",
+        "city": "City",
+        "state": "State",
+        "landmark": "Near Tower"
+      }
+    ],
+    "cart": {
+      "7544818": {
+        "uid": "7544818",
+        "name": "Good Life Kachi Ghani Mustard Oil 1 L (Pouch)",
+        "slug": "good-life-kachi-ghani-mustard-oil-1-l-pouch-mffnb4-7544818",
+        "price": 178.0,
+        "mrp": 220.0,
+        "quantity": 1,
+        "size": "1 L",
+        "pack": "1 L",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "1 L"
+        ],
+        "max_qty": 3,
+        "sellable": true
+      },
+      "7529583": {
+        "uid": "7529583",
+        "name": "Good Life Whole Wheat Chakki Atta 5 kg",
+        "slug": "good-life-whole-wheat-chakki-atta-5-kg-mffn46-7529583",
+        "price": 209.0,
+        "mrp": 290.0,
+        "quantity": 1,
+        "size": "5 KG",
+        "pack": "5 kg",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "5 KG"
+        ],
+        "max_qty": 4,
+        "sellable": true
+      },
+      "7507147": {
+        "uid": "7507147",
+        "name": "Fortune Chakki Fresh Atta 5 kg",
+        "slug": "fortune-chakki-fresh-atta-5-kg-mffmtn-7507147",
+        "price": 225.0,
+        "mrp": 263.0,
+        "quantity": 1,
+        "size": "5 KG",
+        "pack": "5 kg",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "5 KG"
+        ],
+        "max_qty": 4,
+        "sellable": true
+      }
+    },
+    "search_history": [
+      "Atta",
+      "Mustard oil",
+      "Vita meri"
+    ],
+    "cart_mode": "OFFLINE",
+    "preset_coupon": "JM1Y6O2G2IX"
+  },
+  "8140727103": {
+    "cart": {
+      "7526696": {
+        "uid": "7526696",
+        "name": "Tata Tea Premium Dust Kadak Assam Chai 250 g",
+        "slug": "tata-tea-premium-dust-kadak-assam-chai-250-g-mffn2u-7526696",
+        "price": 95.0,
+        "mrp": 100.0,
+        "quantity": 2,
+        "size": "OS",
+        "pack": "250 g",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "OS"
+        ],
+        "max_qty": 4,
+        "sellable": true
+      }
+    },
+    "addresses": [
+      {
+        "pincode": "754004",
+        "latitude": 20.132201,
+        "longitude": 86.041713,
+        "phone": "9988556633",
+        "name": "Rrrrrr",
+        "address1": "Rrrrr",
+        "address2": "Rrrrr",
+        "city": "City",
+        "state": "State",
+        "landmark": "Near Tower"
+      }
+    ],
+    "search_history": [
+      "Tata"
+    ]
+  },
+  "test_qty_0001": {
+    "cart": {}
+  }
+}

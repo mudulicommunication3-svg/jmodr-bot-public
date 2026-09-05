@@ -21,7 +21,9 @@ manual_cart_detail.json
 # === PUBLIC REPO SAFETY (never push these) ===
 sessions/
 bot_database.json
-offline_database.json
+# NOTE: offline_database.json is COMMITTED on purpose - the bot reads
+# saved addresses/cart from this file on every restart (see bot_public.yml).
+# Do NOT re-ignore it or restart will empty saved addresses/cart again.
 state.enc
 _inspect_browser.py
 inspect_cart.cmd
@@ -35,3 +37,5 @@ _test_*.py
 
 STATE_KEY.local.txt
 private_keys/
+
+_test_refresh.py
