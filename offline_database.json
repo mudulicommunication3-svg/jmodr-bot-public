@@ -156,15 +156,15 @@
         "max_qty": 5,
         "sellable": true
       },
-      "7536319": {
-        "uid": "7536319",
-        "name": "Bharat Panch Phutam 100 g",
-        "slug": "bharat-panch-phutam-100-g-mffn77-7536319",
-        "price": 12.0,
-        "mrp": 25.0,
+      "7552647": {
+        "uid": "7552647",
+        "name": "Loose Sona Masuri Rice 1 kg",
+        "slug": "loose-sona-masuri-rice-1-kg-mffnfd-7552647",
+        "price": 39.0,
+        "mrp": 39.0,
         "quantity": 1,
         "size": "OS",
-        "pack": "100 g",
+        "pack": "1 kg",
         "seller_id": 1,
         "vertical": "GROCERIES",
         "size_variants": [
@@ -175,9 +175,14 @@
       }
     },
     "search_history": [
-      "Futan",
-      "Snactac atta",
-      "Oil"
+      "Rice",
+      "Noodles 70g",
+      "Noodles",
+      "Snact",
+      "Atta nod",
+      "Oil",
+      "Sugar",
+      "Bdm"
     ],
     "cart_mode": "OFFLINE",
     "preset_coupon": "JM1Y6O2G2IX"
