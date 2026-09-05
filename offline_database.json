@@ -71,8 +71,7 @@
         "address2": "Desi boy",
         "city": "City",
         "state": "State",
-        "landmark": "Near Tower",
-        "is_default": true
+        "landmark": "Near Tower"
       },
       {
         "pincode": "754004",
@@ -84,7 +83,8 @@
         "address2": "Test",
         "city": "City",
         "state": "State",
-        "landmark": "Near Tower"
+        "landmark": "Near Tower",
+        "is_default": true
       }
     ],
     "cart": {
@@ -175,16 +175,9 @@
       }
     },
     "search_history": [
-      "100",
       "Futan",
-      "Rice",
-      "Noodles 70g",
-      "Noodles",
-      "Snact",
-      "Atta nod",
-      "Oil",
-      "Sugar",
-      "Bdm"
+      "Snactac atta",
+      "Oil"
     ],
     "cart_mode": "OFFLINE",
     "preset_coupon": "JM1Y6O2G2IX"
