@@ -47,7 +47,7 @@ jobs:
         run: |
           if [ -z "$STATE_KEY" ]; then echo "❌ STATE_KEY secret missing!"; exit 1; fi
           # ✅ offline_database.json is COMMITTED in the repo - keep the repo copy
-          # as authoritative so saved addresses/cart survive every restart.
+          # as a fallback so saved addresses/cart survive every restart.
           cp -f offline_database.json /tmp/offline_database.repo.json 2>/dev/null || true
           if [ -f backup/sessions.enc ]; then
             echo "📥 Restoring sessions from repo backup folder (authoritative)..."
@@ -61,8 +61,14 @@ jobs:
           else
             echo "🆕 First run - login via Telegram (/start -> New Login)"
           fi
-          # Restore the committed offline database over whatever the old state carried
-          cp -f /tmp/offline_database.repo.json offline_database.json 2>/dev/null || true
+          # Keep fresh saves from the last run (valid non-empty state copy),
+          # otherwise fall back to the committed repo copy.
+          if python -c "import json;d=json.load(open('offline_database.json'));assert d" 2>/dev/null; then
+            echo "✅ offline_database.json from state (has data)"
+          else
+            echo "🔄 offline_database.json empty/invalid -> using committed repo copy"
+            cp -f /tmp/offline_database.repo.json offline_database.json 2>/dev/null || true
+          fi
           echo "📦 offline_database.json entries: $(python -c "import json;d=json.load(open('offline_database.json'));print(len(d))" 2>/dev/null || echo 0)"
 
       - name: Create .env from secret
@@ -114,4 +120,14 @@ jobs:
             fi
           else
             echo "No state to backup"
+          fi
+          # Also commit fresh offline database changes so the NEXT run reads them
+          # from the repo file (survives even a cancelled/crashed run).
+          git add offline_database.json
+          if git diff --cached --quiet; then
+            echo "No offline_database change since last backup"
+          else
+            git commit -m "offline database backup $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+            echo "✅ offline_database.json committed to repo"
           fi
