@@ -121,6 +121,23 @@
         ],
         "max_qty": 2,
         "sellable": true
+      },
+      "7537169": {
+        "uid": "7537169",
+        "name": "Sunpure Physically Refined Sunflower Oil 1 L",
+        "slug": "sunpure-physically-refined-sunflower-oil-1-l-mffn7m-7537169",
+        "price": 176.0,
+        "mrp": 230.0,
+        "quantity": 1,
+        "size": "1 L",
+        "pack": "1 L",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "1 L"
+        ],
+        "max_qty": 4,
+        "sellable": true
       }
     },
     "search_history": [
