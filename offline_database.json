@@ -87,76 +87,7 @@
         "is_default": true
       }
     ],
-    "cart": {
-      "72878635": {
-        "uid": "72878635",
-        "name": "BDM Fresh Whole Wheat Chakki Atta 5 kg",
-        "slug": "bdm-fresh-whole-wheat-chakki-atta-5-kg-ml6jl7-72878635",
-        "price": 179.0,
-        "mrp": 250.0,
-        "quantity": 1,
-        "size": "OS",
-        "pack": "5 kg",
-        "seller_id": 1,
-        "vertical": "GROCERIES",
-        "size_variants": [
-          "OS"
-        ],
-        "max_qty": 2,
-        "sellable": true
-      },
-      "7550790": {
-        "uid": "7550790",
-        "name": "Loose Sugar M 1 kg",
-        "slug": "loose-sugar-m-1-kg-mffneb-7550790",
-        "price": 59.0,
-        "mrp": 59.0,
-        "quantity": 1,
-        "size": "OS",
-        "pack": "1 kg",
-        "seller_id": 1,
-        "vertical": "GROCERIES",
-        "size_variants": [
-          "OS"
-        ],
-        "max_qty": 2,
-        "sellable": true
-      },
-      "7537169": {
-        "uid": "7537169",
-        "name": "Sunpure Physically Refined Sunflower Oil 1 L",
-        "slug": "sunpure-physically-refined-sunflower-oil-1-l-mffn7m-7537169",
-        "price": 176.0,
-        "mrp": 230.0,
-        "quantity": 1,
-        "size": "1 L",
-        "pack": "1 L",
-        "seller_id": 1,
-        "vertical": "GROCERIES",
-        "size_variants": [
-          "1 L"
-        ],
-        "max_qty": 4,
-        "sellable": true
-      },
-      "7552647": {
-        "uid": "7552647",
-        "name": "Loose Sona Masuri Rice 1 kg",
-        "slug": "loose-sona-masuri-rice-1-kg-mffnfd-7552647",
-        "price": 39.0,
-        "mrp": 39.0,
-        "quantity": 1,
-        "size": "OS",
-        "pack": "1 kg",
-        "seller_id": 1,
-        "vertical": "GROCERIES",
-        "size_variants": [
-          "OS"
-        ],
-        "max_qty": 4,
-        "sellable": true
-      }
-    },
+    "cart": {},
     "search_history": [],
     "cart_mode": "OFFLINE",
     "preset_coupon": "JM1Y6O2G2IX"
