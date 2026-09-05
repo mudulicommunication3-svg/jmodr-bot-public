@@ -3,7 +3,7 @@ name: JioMart Bot (Public 24x7)
 on:
   workflow_dispatch:        # manual start (collaborators only)
   schedule:
-    - cron: "0 */8 * * *"   # EMERGENCY FALLBACK only - chain mode self-renews every ~5h30m
+    - cron: "0 2 * * *"     # DAILY fallback only (07:30 IST) - chain mode self-renews every ~5h30m
 
 concurrency:
   group: jiomart-bot-public
