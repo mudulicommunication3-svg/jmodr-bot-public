@@ -104,9 +104,27 @@
         ],
         "max_qty": 2,
         "sellable": true
+      },
+      "7550790": {
+        "uid": "7550790",
+        "name": "Loose Sugar M 1 kg",
+        "slug": "loose-sugar-m-1-kg-mffneb-7550790",
+        "price": 59.0,
+        "mrp": 59.0,
+        "quantity": 1,
+        "size": "OS",
+        "pack": "1 kg",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "OS"
+        ],
+        "max_qty": 2,
+        "sellable": true
       }
     },
     "search_history": [
+      "Sugar",
       "Bdm"
     ],
     "cart_mode": "OFFLINE",
