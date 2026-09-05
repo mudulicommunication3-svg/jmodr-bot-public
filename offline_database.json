@@ -156,15 +156,15 @@
         "max_qty": 5,
         "sellable": true
       },
-      "7552647": {
-        "uid": "7552647",
-        "name": "Loose Sona Masuri Rice 1 kg",
-        "slug": "loose-sona-masuri-rice-1-kg-mffnfd-7552647",
-        "price": 39.0,
-        "mrp": 39.0,
+      "7536319": {
+        "uid": "7536319",
+        "name": "Bharat Panch Phutam 100 g",
+        "slug": "bharat-panch-phutam-100-g-mffn77-7536319",
+        "price": 12.0,
+        "mrp": 25.0,
         "quantity": 1,
         "size": "OS",
-        "pack": "1 kg",
+        "pack": "100 g",
         "seller_id": 1,
         "vertical": "GROCERIES",
         "size_variants": [
@@ -175,6 +175,7 @@
       }
     },
     "search_history": [
+      "Futan",
       "Rice",
       "Noodles 70g",
       "Noodles",
