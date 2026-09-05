@@ -155,9 +155,27 @@
         ],
         "max_qty": 4,
         "sellable": true
+      },
+      "7517466": {
+        "uid": "7517466",
+        "name": "Snactac Atta Instant Noodles 70 g",
+        "slug": "snactac-atta-instant-noodles-70-g-mffmyj-7517466",
+        "price": 13.0,
+        "mrp": 26.0,
+        "quantity": 1,
+        "size": "OS",
+        "pack": "70 g",
+        "seller_id": 1,
+        "vertical": "GROCERIES",
+        "size_variants": [
+          "OS"
+        ],
+        "max_qty": 5,
+        "sellable": true
       }
     },
     "search_history": [
+      "Noodles 70g",
       "Noodles",
       "Snact",
       "Atta nod",
