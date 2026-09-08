@@ -1,0 +1,179 @@
+name: JioMart Bot (Public 24x7)
+
+on:
+  workflow_dispatch:        # manual start (collaborators only)
+  schedule:
+    - cron: "0 2 * * *"     # DAILY fallback only (07:30 IST) - chain mode self-renews every ~5h30m
+
+concurrency:
+  group: jiomart-bot-public
+  cancel-in-progress: true
+
+permissions:
+  contents: write           # write = auto-backup sessions.enc into repo folder
+  actions: write            # write = admin panel "Restart Bot" button (workflow dispatch)
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355    # GitHub hard cap = 6h; chain mode renews before this
+    env:
+      STATE_KEY: ${{ secrets.STATE_KEY }}   # encryption key (sessions)
+      CODE_KEY: ${{ secrets.CODE_KEY }}     # encryption key (bot source code)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # full history (DB auto-save watcher pushes new commits)
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install chromium
+          sudo apt-get update -y && sudo apt-get install -y xvfb   # virtual screen (bot uses headed browser)
+
+      - name: Download encrypted state (public cache, but encrypted!)
+        uses: actions/cache@v4
+        with:
+          path: state.enc
+          key: jm-state-enc-${{ github.run_id }}
+          restore-keys: |
+            jm-state-enc-
+
+      - name: Decrypt state (sessions + database)
+        run: |
+          if [ -z "$STATE_KEY" ]; then echo "❌ STATE_KEY secret missing!"; exit 1; fi
+          # 🔒 PERSONAL DATA: plaintext NEVER in git. Encrypted copy: personal/offline_db.enc
+          cp -f personal/offline_db.enc /tmp/offline_db.repo.enc 2>/dev/null || true
+          if [ -f backup/sessions.enc ]; then
+            echo "📥 Restoring sessions from repo backup folder (authoritative)..."
+            cp -f backup/sessions.enc state.enc
+          elif [ -f state.enc ]; then
+            echo "📥 Repo backup missing - using cache fallback..."
+          fi
+          if [ -f state.enc ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in state.enc | tar xzf -
+            echo "🔓 State restored: $(ls sessions 2>/dev/null | wc -l) session(s)"
+          else
+            echo "🆕 First run - login via Telegram (/start -> New Login)"
+          fi
+          # Keep fresh saves from the last run ONLY if they contain real data,
+          # otherwise decrypt the ENCRYPTED personal copy from the repo (personal/).
+          if python -c "import json,sys;d=json.load(open('offline_database.json'));ok=any((v.get('addresses') or v.get('cart')) for v in d.values() if isinstance(v,dict));sys.exit(0 if ok else 1)" 2>/dev/null; then
+            echo "✅ offline_database.json from state (has address/cart data)"
+          elif [ -f /tmp/offline_db.repo.enc ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in /tmp/offline_db.repo.enc -out offline_database.json \
+              && echo "🔄 state copy empty -> decrypted ENCRYPTED personal copy (personal/)"
+          fi
+          echo "📦 offline_database.json entries: $(python -c "import json;d=json.load(open('offline_database.json'));print(len(d))" 2>/dev/null || echo 0)"
+
+      - name: Create .env from secret
+        run: |
+          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > .env
+          echo "ADMIN_ID=${{ secrets.ADMIN_ID }}" >> .env   # admin panel access (your Telegram ID)
+          echo "OWNER_KEY=${{ secrets.OWNER_KEY }}" >> .env # deployment signature (anti-theft lock)
+
+      - name: Decrypt bot code (public repo stores ONLY encrypted source)
+        run: |
+          if [ -z "$CODE_KEY" ]; then echo "❌ CODE_KEY secret missing!"; exit 1; fi
+          python botcrypt.py decrypt bot.enc jm1.8.0_3.py
+          echo "🔓 Bot source decrypted in runner memory only"
+
+      - name: Start DB auto-save watcher (repo file = permanent storage)
+        run: |
+          cat > db_autosave.sh <<'EOF'
+          #!/bin/bash
+          # Saves EVERY offline_database.json change as ENCRYPTED personal/offline_db.enc
+          # (plaintext NEVER enters git - hash-based change detection).
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p personal
+          LAST_HASH=$(md5sum offline_database.json 2>/dev/null | cut -d' ' -f1)
+          sleep 60   # let the bot finish restore/startup first
+          while true; do
+            sleep 45
+            [ -f offline_database.json ] || continue
+            H=$(md5sum offline_database.json | cut -d' ' -f1)
+            [ "$H" = "$LAST_HASH" ] && continue
+            openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY \
+              -in offline_database.json -out personal/offline_db.enc || continue
+            git add personal/offline_db.enc
+            git commit -m "db autosave (encrypted personal) $(date -u '+%Y-%m-%d %H:%M UTC')" >/dev/null 2>&1 || true
+            git pull --rebase --autostash origin main >/dev/null 2>&1 || true
+            git rebase --abort >/dev/null 2>&1 || true
+            if git push origin main >/dev/null 2>&1; then
+              LAST_HASH="$H"
+              echo "$(date -u '+%H:%M:%S') 🔒 personal/offline_db.enc (encrypted) saved to repo"
+            fi
+          done
+          EOF
+          chmod +x db_autosave.sh
+          nohup bash db_autosave.sh > db_autosave.log 2>&1 &
+          echo "🚀 DB auto-save watcher started (saves add/edit/delete within ~45s)"
+
+      - name: Run Bot (long polling)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # admin panel "Restart Bot" button
+          GH_REPO: mudulicommunication3-svg/jmodr-bot-public
+        run: xvfb-run -a --server-args="-screen 0 1280x800x24" python jm1.8.0_3.py
+
+      - name: Encrypt state (sessions NEVER readable in public cache)
+        if: always()
+        run: |
+          rm -f state.enc
+          touch offline_database.json   # keep file in backup even if bot never created it
+          ( tar czf - sessions bot_database.json offline_database.json 2>/dev/null || true ) | \
+            openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY -out state.enc
+          echo "🔒 State encrypted ($(stat -c%s state.enc 2>/dev/null || echo 0) bytes)"
+
+      - name: Save encrypted state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.enc
+          key: jm-state-enc-${{ github.run_id }}
+
+      - name: Backup sessions to repo folder (backup/sessions.enc)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p backup
+          # watcher may have pushed newer commits meanwhile - sync first (autostash keeps local files)
+          git pull --rebase --autostash origin main >/dev/null 2>&1 || true
+          git rebase --abort >/dev/null 2>&1 || true
+          if [ -f state.enc ]; then cp -f state.enc backup/sessions.enc; fi
+          if [ -f backup/sessions.enc ]; then
+            git add backup/sessions.enc
+            if git diff --cached --quiet; then
+              echo "No session change since last backup"
+            else
+              git commit -m "session backup $(date -u '+%Y-%m-%d %H:%M UTC')"
+              git push
+              echo "✅ Sessions backup committed to backup/sessions.enc"
+            fi
+          else
+            echo "No state to backup"
+          fi
+          # Commit ENCRYPTED personal database (plaintext NEVER enters git).
+          if [ -f offline_database.json ]; then
+            mkdir -p personal
+            openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY \
+              -in offline_database.json -out personal/offline_db.enc
+            git add personal/offline_db.enc
+            if ! git diff --cached --quiet; then
+              git commit -m "personal db backup (encrypted) $(date -u '+%Y-%m-%d %H:%M UTC')"
+              git pull --rebase --autostash origin main >/dev/null 2>&1 || true
+              git rebase --abort >/dev/null 2>&1 || true
+              git push
+              echo "✅ personal/offline_db.enc (encrypted) committed to repo"
+            else
+              echo "No offline_database change since last backup"
+            fi
+          fi

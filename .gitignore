@@ -1,0 +1,41 @@
+# === NEVER push these to GitHub ===
+.env
+__pycache__/
+*.pyc
+
+# === Bot source code: plaintext NEVER pushed (only bot.enc) ===
+jm*.py
+jm_decrypted_test.py
+
+# === Probe/debug outputs (not needed by the bot) ===
+*.txt
+!requirements.txt
+*.jsonl
+*.json.tmp
+manual_cart_detail.json
+
+# === Keep these (bot needs them on first run): ===
+# sessions/            -> login cookies (PRIVATE repo ONLY!)
+# bot_database.json    -> configs (PRIVATE repo ONLY!)
+
+# === PUBLIC REPO SAFETY (never push these) ===
+sessions/
+bot_database.json
+# 🔒 PERSONAL DATA - plaintext NEVER in git! (addresses/phones/GPS inside)
+# Encrypted copy: personal/offline_db.enc (bot decrypts it on every restart).
+offline_database.json
+state.enc
+_inspect_browser.py
+inspect_cart.cmd
+_capture_network.jsonl
+_captured_state.json
+sessions_restore.tar.gz
+_test_new_cart.py
+_test_new_cart2.py
+_dump_ls.py
+_test_*.py
+
+STATE_KEY.local.txt
+private_keys/
+
+_test_refresh.py
