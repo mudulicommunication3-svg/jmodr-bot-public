@@ -52,14 +52,19 @@ jobs:
         run: |
           if [ -z "$STATE_KEY" ]; then echo "❌ STATE_KEY secret missing!"; exit 1; fi
           # 🔒 PERSONAL DATA: plaintext NEVER in git. Encrypted copy: personal/offline_db.enc
-          # 📥 ONE-TIME RECOVERY: re-encrypt the recovered DB with THIS repo's STATE_KEY
+          # 📥 ONE-TIME RECOVERY: import recovered DB ONLY when current copy has no real data
           if [ -n "$DB_RECOVERED_B64" ]; then
-            echo "$DB_RECOVERED_B64" | base64 -d > /tmp/db_recovered.json
-            python -c "import json;print('📥 recovered DB entries:', len(json.load(open('/tmp/db_recovered.json'))))"
-            mkdir -p personal
-            openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY \
-              -in /tmp/db_recovered.json -out personal/offline_db.enc \
-              && echo "✅ recovered DB imported into personal/ (encrypted with repo key)"
+            if openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in personal/offline_db.enc -out /tmp/_dbcheck.json 2>/dev/null \
+               && python -c "import json,sys;d=json.load(open('/tmp/_dbcheck.json'));ok=any((v.get('addresses') or v.get('cart')) for v in d.values() if isinstance(v,dict));sys.exit(0 if ok else 1)" 2>/dev/null; then
+              echo "✅ current personal copy already has data - keeping it"
+            else
+              echo "$DB_RECOVERED_B64" | base64 -d > /tmp/db_recovered.json
+              python -c "import json;print('📥 recovered DB entries:', len(json.load(open('/tmp/db_recovered.json'))))"
+              mkdir -p personal
+              openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY \
+                -in /tmp/db_recovered.json -out personal/offline_db.enc \
+                && echo "✅ recovered DB imported into personal/ (one-time, encrypted with repo key)"
+            fi
           fi
           cp -f personal/offline_db.enc /tmp/offline_db.repo.enc 2>/dev/null || true
           if [ -f backup/sessions.enc ]; then
