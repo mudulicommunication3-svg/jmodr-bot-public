@@ -47,9 +47,20 @@ jobs:
             jm-state-enc-
 
       - name: Decrypt state (sessions + database)
+        env:
+          DB_RECOVERED_B64: ${{ secrets.DB_RECOVERED_B64 }}
         run: |
           if [ -z "$STATE_KEY" ]; then echo "❌ STATE_KEY secret missing!"; exit 1; fi
           # 🔒 PERSONAL DATA: plaintext NEVER in git. Encrypted copy: personal/offline_db.enc
+          # 📥 ONE-TIME RECOVERY: re-encrypt the recovered DB with THIS repo's STATE_KEY
+          if [ -n "$DB_RECOVERED_B64" ]; then
+            echo "$DB_RECOVERED_B64" | base64 -d > /tmp/db_recovered.json
+            python -c "import json;print('📥 recovered DB entries:', len(json.load(open('/tmp/db_recovered.json'))))"
+            mkdir -p personal
+            openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY \
+              -in /tmp/db_recovered.json -out personal/offline_db.enc \
+              && echo "✅ recovered DB imported into personal/ (encrypted with repo key)"
+          fi
           cp -f personal/offline_db.enc /tmp/offline_db.repo.enc 2>/dev/null || true
           if [ -f backup/sessions.enc ]; then
             echo "📥 Restoring sessions from repo backup folder (authoritative)..."
