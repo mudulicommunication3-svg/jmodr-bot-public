@@ -81,11 +81,19 @@ jobs:
           fi
           # Keep fresh saves from the last run ONLY if they contain real data,
           # otherwise decrypt the ENCRYPTED personal copy from the repo (personal/).
-          if python -c "import json,sys;d=json.load(open('offline_database.json'));ok=any((v.get('addresses') or v.get('cart')) for v in d.values() if isinstance(v,dict));sys.exit(0 if ok else 1)" 2>/dev/null; then
-            echo "✅ offline_database.json from state (has address/cart data)"
-          elif [ -f /tmp/offline_db.repo.enc ]; then
-            openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in /tmp/offline_db.repo.enc -out offline_database.json \
-              && echo "🔄 state copy empty -> decrypted ENCRYPTED personal copy (personal/)"
+          # NEW: the watcher's repo copy (personal/offline_db.enc, saved every ~45s)
+          # is the FRESHEST -> ALWAYS prefer it when it decrypts (covers manual
+          # restarts mid-run + cancelled runs whose state copy is stale).
+          if [ -f /tmp/offline_db.repo.enc ] && openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in /tmp/offline_db.repo.enc -out /tmp/offline_db.repo.json 2>/dev/null; then
+            if python -c "import json,sys;d=json.load(open('/tmp/offline_db.repo.json'));ok=any((v.get('addresses') or v.get('cart') or v.get('_bot_state')) for v in d.values() if isinstance(v,dict));sys.exit(0 if ok else 1)" 2>/dev/null; then
+              echo "🔄 watcher repo copy is freshest -> restoring it"
+              cp -f /tmp/offline_db.repo.json offline_database.json
+            fi
+          fi
+          if python -c "import json,sys;d=json.load(open('offline_database.json'));ok=any((v.get('addresses') or v.get('cart') or v.get('_bot_state')) for v in d.values() if isinstance(v,dict));sys.exit(0 if ok else 1)" 2>/dev/null; then
+            echo "✅ offline_database.json has address/cart/bot-state data"
+          else
+            echo "🆕 offline_database.json empty - no saved data"
           fi
           echo "📦 offline_database.json entries: $(python -c "import json;d=json.load(open('offline_database.json'));print(len(d))" 2>/dev/null || echo 0)"
 
