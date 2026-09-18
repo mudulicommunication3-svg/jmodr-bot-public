@@ -31,7 +31,7 @@ jobs:
       BOT_TOKEN: ${{ matrix.slot == 1 && secrets.BOT_TOKEN || secrets[format('BOT_TOKEN{0}', matrix.slot)] }}
       ADMIN_ID: ${{ secrets.ADMIN_ID }}
       OWNER_KEY: ${{ secrets.OWNER_KEY }}
-      SLAVE_SYNC_MINUTES: '10'
+      SLAVE_SYNC_MINUTES: '2'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -139,13 +139,34 @@ jobs:
           #!/bin/bash
           # Saves EVERY offline_database.json change as ENCRYPTED personal/offline_db.enc
           # (plaintext NEVER enters git - hash-based change detection).
+          # 🎭 Also BROADCASTS NEW JioMart logins (encrypted) so SLAVE bots (slots 2-5)
+          #    pick them up within minutes: new login on master -> whole fleet can order.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p personal
           LAST_HASH=$(md5sum offline_database.json 2>/dev/null | cut -d' ' -f1)
+          LAST_LIST=$(cd sessions 2>/dev/null && ls -1 *.json 2>/dev/null | sort)
           sleep 60   # let the bot finish restore/startup first
           while true; do
             sleep 45
+            # ── 🎭 SESSION BROADCAST: only NEW login files (small + fast) ──
+            LIST_NOW=$(cd sessions 2>/dev/null && ls -1 *.json 2>/dev/null | sort)
+            if [ -n "$LIST_NOW" ] && [ "$LIST_NOW" != "$LAST_LIST" ]; then
+              NEWF=$(comm -13 <(echo "$LAST_LIST") <(echo "$LIST_NOW") 2>/dev/null | sed 's|^|sessions/|' | tr '\n' ' ')
+              if [ -n "$NEWF" ]; then
+                tar czf - $NEWF bot_database.json 2>/dev/null | \
+                  openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY -out personal/sess_broadcast.enc || true
+                git add personal/sess_broadcast.enc
+                git commit -m "session broadcast: new login(s) -> fleet (encrypted)" >/dev/null 2>&1 || true
+                git pull --rebase --autostash origin main >/dev/null 2>&1 || true
+                git rebase --abort >/dev/null 2>&1 || true
+                if git push origin main >/dev/null 2>&1; then
+                  echo "$(date -u '+%H:%M:%S') 📡 NEW LOGIN broadcast to all slaves (encrypted)"
+                fi
+              fi
+              LAST_LIST="$LIST_NOW"
+            fi
+            # ── 💾 OFFLINE DB AUTOSAVE ──
             [ -f offline_database.json ] || continue
             H=$(md5sum offline_database.json | cut -d' ' -f1)
             [ "$H" = "$LAST_HASH" ] && continue
