@@ -14,22 +14,16 @@ if (-not (Test-Path $keyFile)) {
     exit 1
 }
 
-# Source file: prefer repo copy (from a local bot run); else use private-folder copy
-$srcFile = 'jm1.8.0_3.py'
+# Source file: always the PRIVATE copy (plaintext is never kept in the public folder)
+$srcFile = Join-Path $PSScriptRoot '..\jmodr-bot-private\jm1.8.0_3.py'
 if (-not (Test-Path $srcFile)) {
-    $privSrc = Join-Path $PSScriptRoot '..\jmodr-bot-private\jm1.8.0_3.py'
-    if (Test-Path $privSrc) {
-        Copy-Item $privSrc $srcFile
-        Write-Host "[INFO] Using source from private folder: $privSrc" -ForegroundColor Yellow
-    } else {
-        Write-Host "[ERROR] jm1.8.0_3.py not found (run the bot once, or keep a copy in jmodr-bot-private)." -ForegroundColor Red
-        exit 1
-    }
+    Write-Host "[ERROR] Source not found: $srcFile (the plaintext bot lives in the private folder)" -ForegroundColor Red
+    exit 1
 }
 
-# 1. Encrypt
+# 1. Encrypt (private source -> bot.enc in this public repo)
 $env:CODE_KEY = (Get-Content $keyFile -Raw).Trim()
-python botcrypt.py encrypt
+python botcrypt.py encrypt $srcFile 'bot.enc'
 if ($LASTEXITCODE -ne 0) { Write-Host "[ERROR] Encryption failed." -ForegroundColor Red; exit 1 }
 
 # 2. Commit + push (only if bot.enc changed)
@@ -39,6 +33,9 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "[INFO] No changes to push." -ForegroundColor Yellow
 } else {
     git commit -m "update: encrypted bot source $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+    # the cloud bot pushes its own backups - sync first so the push is never rejected
+    git pull --rebase --autostash origin main > $null 2>&1
+    git rebase --abort > $null 2>&1
     git push origin main
     Write-Host "[DONE] Encrypted code pushed to GitHub." -ForegroundColor Green
 }

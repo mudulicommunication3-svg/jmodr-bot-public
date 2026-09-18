@@ -7,10 +7,10 @@ Output format is 100% compatible with:
 so GitHub Actions can decrypt it at runtime.
 
 Usage:
-    python botcrypt.py encrypt                    # jm1.8.0_3.py -> bot.enc
+    python botcrypt.py encrypt [src] [out]        # default: jm1.8.0_3.py -> bot.enc
     python botcrypt.py decrypt [in] [out]         # bot.enc -> file
 Password comes from CODE_KEY env var or STATE_KEY.local.txt file.
-"""
+""".rstrip()
 import hashlib
 import os
 import sys
@@ -53,11 +53,18 @@ def decrypt(src: str, dst: str, password: bytes):
 
 
 def get_password() -> bytes:
+    """Password from CODE_KEY env var, local key file, or the private folder."""
     env = os.environ.get("CODE_KEY")
     if env:
         return env.strip().encode()
-    if os.path.exists("STATE_KEY.local.txt"):
-        return open("STATE_KEY.local.txt", encoding="utf-8").read().strip().encode()
+    candidates = [
+        "STATE_KEY.local.txt",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "private_keys", "CODE_KEY.txt"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "jmodr-bot-private", "private_keys", "CODE_KEY.txt"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return open(path, encoding="utf-8").read().strip().encode()
     sys.exit("[ERROR] No key found! Set CODE_KEY env var or create STATE_KEY.local.txt")
 
 
@@ -67,7 +74,9 @@ if __name__ == "__main__":
         sys.exit(1)
     pw = get_password()
     if sys.argv[1] == "encrypt":
-        encrypt("jm1.8.0_3.py", "bot.enc", pw)
+        src = sys.argv[2] if len(sys.argv) > 2 else "jm1.8.0_3.py"
+        dst = sys.argv[3] if len(sys.argv) > 3 else "bot.enc"
+        encrypt(src, dst, pw)
     else:
         src = sys.argv[2] if len(sys.argv) > 2 else "bot.enc"
         dst = sys.argv[3] if len(sys.argv) > 3 else "jm_decrypted_test.py"
