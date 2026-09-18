@@ -1,13 +1,9 @@
-name: JioMart Bot (Public 24x7)
+name: JioMart Bot Fleet (Public 24x7)
 
 on:
   workflow_dispatch:        # manual start (collaborators only)
   schedule:
     - cron: "0 2 * * *"     # DAILY fallback only (07:30 IST) - chain mode self-renews every ~5h30m
-
-concurrency:
-  group: jiomart-bot-public
-  cancel-in-progress: true
 
 permissions:
   contents: write           # write = auto-backup sessions.enc into repo folder
@@ -15,16 +11,39 @@ permissions:
 
 jobs:
   run-bot:
+    # 🎭 FLEET: slot 1 = MASTER (owns the database), slots 2-5 = SLAVES
+    # (slaves work on a RAM-only copy synced from the master - zero data effect)
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        slot: [1, 2, 3, 4, 5]
     runs-on: ubuntu-latest
     timeout-minutes: 355    # GitHub hard cap = 6h; chain mode renews before this
+    concurrency:
+      group: jiomart-bot-slot-${{ matrix.slot }}   # per-slot: masters/slaves never clash
+      cancel-in-progress: true
     env:
       STATE_KEY: ${{ secrets.STATE_KEY }}   # encryption key (sessions)
       CODE_KEY: ${{ secrets.CODE_KEY }}     # encryption key (bot source code)
+      BOT_ROLE: ${{ matrix.slot == 1 && 'master' || 'slave' }}
+      BOT_SLOT: ${{ matrix.slot }}
+      BOT_TOKEN: ${{ matrix.slot == 1 && secrets.BOT_TOKEN || secrets[format('BOT_TOKEN{0}', matrix.slot)] }}
+      ADMIN_ID: ${{ secrets.ADMIN_ID }}
+      OWNER_KEY: ${{ secrets.OWNER_KEY }}
+      SLAVE_SYNC_MINUTES: '10'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0        # full history (DB auto-save watcher pushes new commits)
+
+      - name: Fleet role
+        run: |
+          echo "🤖 Slot $BOT_SLOT = $BOT_ROLE"
+          echo "   master(1) = database owner | slaves(2-5) = RAM-only order bots"
+          [ "$BOT_ROLE" = "master" ] && [ ${#BOT_TOKEN} -lt 20 ] && echo "⚠️ BOT_TOKEN secret looks empty for slot 1!" || true
+          [ "$BOT_ROLE" = "slave" ] && [ ${#BOT_TOKEN} -lt 20 ] && echo "⚠️ BOT_TOKEN${BOT_SLOT} secret missing/short - this slave cannot start!" || true
 
       - name: Python
         uses: actions/setup-python@v5
@@ -38,7 +57,8 @@ jobs:
           python -m playwright install chromium
           sudo apt-get update -y && sudo apt-get install -y xvfb   # virtual screen (bot uses headed browser)
 
-      - name: Download encrypted state (public cache, but encrypted!)
+      - name: Download encrypted state (public cache, but encrypted!)  [MASTER ONLY]
+        if: matrix.slot == 1
         uses: actions/cache@v4
         with:
           path: state.enc
@@ -52,8 +72,8 @@ jobs:
         run: |
           if [ -z "$STATE_KEY" ]; then echo "❌ STATE_KEY secret missing!"; exit 1; fi
           # 🔒 PERSONAL DATA: plaintext NEVER in git. Encrypted copy: personal/offline_db.enc
-          # 📥 ONE-TIME RECOVERY: import recovered DB ONLY when current copy has no real data
-          if [ -n "$DB_RECOVERED_B64" ]; then
+          # 📥 ONE-TIME RECOVERY (master only): import recovered DB ONLY when current copy has no real data
+          if [ "$BOT_ROLE" = "master" ] && [ -n "$DB_RECOVERED_B64" ]; then
             if openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in personal/offline_db.enc -out /tmp/_dbcheck.json 2>/dev/null \
                && python -c "import json,sys;d=json.load(open('/tmp/_dbcheck.json'));ok=any((v.get('addresses') or v.get('cart')) for v in d.values() if isinstance(v,dict));sys.exit(0 if ok else 1)" 2>/dev/null; then
               echo "✅ current personal copy already has data - keeping it"
@@ -99,9 +119,12 @@ jobs:
 
       - name: Create .env from secret
         run: |
-          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > .env
-          echo "ADMIN_ID=${{ secrets.ADMIN_ID }}" >> .env   # admin panel access (your Telegram ID)
-          echo "OWNER_KEY=${{ secrets.OWNER_KEY }}" >> .env # deployment signature (anti-theft lock)
+          echo "BOT_TOKEN=$BOT_TOKEN" > .env
+          echo "ADMIN_ID=$ADMIN_ID" >> .env   # admin panel access (your Telegram ID)
+          echo "OWNER_KEY=$OWNER_KEY" >> .env # deployment signature (anti-theft lock)
+          echo "BOT_ROLE=$BOT_ROLE" >> .env   # master (slot 1) | slave (slots 2-5)
+          echo "BOT_SLOT=$BOT_SLOT" >> .env
+          echo "🤖 .env written for slot $BOT_SLOT ($BOT_ROLE) - token masked"
 
       - name: Decrypt bot code (public repo stores ONLY encrypted source)
         run: |
@@ -109,7 +132,8 @@ jobs:
           python botcrypt.py decrypt bot.enc jm1.8.0_3.py
           echo "🔓 Bot source decrypted in runner memory only"
 
-      - name: Start DB auto-save watcher (repo file = permanent storage)
+      - name: Start DB auto-save watcher (repo file = permanent storage)  [MASTER ONLY]
+        if: matrix.slot == 1
         run: |
           cat > db_autosave.sh <<'EOF'
           #!/bin/bash
@@ -147,8 +171,8 @@ jobs:
           GH_REPO: mudulicommunication3-svg/jmodr-bot-public
         run: xvfb-run -a --server-args="-screen 0 1280x800x24" python jm1.8.0_3.py
 
-      - name: Encrypt state (sessions NEVER readable in public cache)
-        if: always()
+      - name: Encrypt state (sessions NEVER readable in public cache)  [MASTER ONLY]
+        if: always() && matrix.slot == 1
         run: |
           rm -f state.enc
           touch offline_database.json   # keep file in backup even if bot never created it
@@ -156,15 +180,15 @@ jobs:
             openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY -out state.enc
           echo "🔒 State encrypted ($(stat -c%s state.enc 2>/dev/null || echo 0) bytes)"
 
-      - name: Save encrypted state
-        if: always()
+      - name: Save encrypted state  [MASTER ONLY]
+        if: always() && matrix.slot == 1
         uses: actions/cache/save@v4
         with:
           path: state.enc
           key: jm-state-enc-${{ github.run_id }}
 
-      - name: Backup sessions to repo folder (backup/sessions.enc)
-        if: always()
+      - name: Backup sessions to repo folder (backup/sessions.enc)  [MASTER ONLY]
+        if: always() && matrix.slot == 1
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
